@@ -58,6 +58,8 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
         numberOfEpochs = 1
 
         for epoch in range(numberOfEpochs):
+            if self.shuffle:
+                X, y = self._shuffle_data(X, y)
             for i in range(len(X)):
                 prediction, sigma_values = self.predictOneRow(X[i])
                 self.back_propogate(sigma_values, y[i])
@@ -221,6 +223,27 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
         # if len(self.weights) == 0:
         #     return self.initialize_weights()
 
+    def _shuffle_data(self, X, y):
+        """ Shuffle the data! This _ prefix suggests that this method should only be called internally.
+            It might be easier to concatenate X & y and shuffle a single 2D array, rather than
+             shuffling X and y exactly the same way, independently.
+        """
+        combined_array = np.column_stack((X, y))
+        np.random.shuffle(combined_array)
+        A = []
+        B = []
+        for i in range(len(combined_array)):
+            a, b = self.split_list(combined_array[i], (len(combined_array[i]) - 1))
+            A.append(a)
+            B.append(b)
+        return A, B
+
+    def split_list(self, list, length):
+        return list[:length], list[length:]
+
+    def add_bias(self, X):
+        biases = np.ones((len(X), 1))
+        return np.hstack((X, biases))
 
 
 
@@ -234,25 +257,180 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
 
 
 
+# # Hyper-parameters
+# learning_rate = 1.0
+# shuffle = False
+# split_data = False
+# training_percentage = .7
+# sckikitLearn = False
+
+
+# PClass = MLPClassifier([3], learning_rate, 0, shuffle)
+# PClass.fit([[0.0, 0.0, 1.0], [0.0, 1.0, 1.0]], [1.0, 0.0])  # Both
+#
+# print("")
+# PClass.fit([[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]], [1.0])   # first iteration
+# PClass.fit([[0.0, 1.0, 1.0]], [0.0])   # second iteration
+#
+
+
+# def __init__(self, hidden_layer_widths, lr=.1, momentum=0, shuffle=True):
+# # def __init__(self, lr=.1, shuffle=True, deterministic=-1):
+#     self.hidden_layer_widths = hidden_layer_widths
+#     self.lr = lr
+#     self.momentum = momentum
+#     self.shuffle = shuffle
+#     self.weights = []
+#     self.epochs_completed = 0
+
+
+# FIXME Bias!!!! ----------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# You can get away with doing just the one layer
+# The output of a bias node is always one, then it is multiplied by the weight
+# There is never an input to a bias node
+# input_layer_number does not include bias node
 
 
 
+# Files to be read
+arff_files = [
+    # "seperable",
+    # "StandardVoting",
+    # "non_seperable",
+    "linsep2nonorigin",
+    # "data_banknote_authentication",
+]
 
 # Hyper-parameters
 learning_rate = 1.0
 shuffle = False
 split_data = False
 training_percentage = .7
-sckikitLearn = False
+hidden_layer_widths = [3]
+momentum = .1
+
+for i in range(len(arff_files)):
+    # Get the file
+    fileName = arff_files[i] + ".arff"
+    mat = Arff(fileName, label_count=1)
+
+    # Parse the data
+    data = mat.data[:, 0:-1]
+    labels = mat.data[:, -1].reshape(-1, 1)
+    PClass = MLPClassifier(hidden_layer_widths, learning_rate, momentum, shuffle)
+    data = PClass.add_bias(data)
+    print(fileName)
+
+    # Run the data either split or not split
+    if not split_data:
+        PClass.fit(data, labels)
+        accuracy = PClass.score(data, labels)
+        print("Epochs Completed: ", PClass.epochs_completed)
+        print("Accuray = [{:.2f}]".format(accuracy))
+        print("Final Weights = ", end='')
+        # PClass.printWeights()
+    else:
+        X1, X2, y1, y2 = train_test_split(data, labels, test_size = 0.33)
+        PClass.fit(X1, y1)
+        train_accuracy = PClass.score(X1, y1)
+        test_accuracy = PClass.score(X2, y2)
+        print("Epochs Completed: ", PClass.epochs_completed)
+        print("Training Accuray = [{:.2f}]".format(train_accuracy))
+        print("Test Accuray = [{:.2f}]".format(test_accuracy))
+        print("Final Weights = ", end='')
+        # PClass.printWeights()
 
 
-PClass = MLPClassifier([3], learning_rate, 0, shuffle)
-PClass.fit([[0.0, 0.0, 1.0], [0.0, 1.0, 1.0]], [1.0, 0.0])  # Both
 
-print("")
-# PClass.fit([[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]], [1.0])   # first iteration
-# PClass.fit([[0.0, 1.0, 1.0]], [0.0])   # second iteration
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # This section runs the voting data on the scikit learn perceptron
+# fileName = "StandardVoting.arff"
+# mat = Arff(fileName, label_count=1)
+# data = mat.data[:, 0:-1]
+# labels = mat.data[:, -1].reshape(-1, 1)
 #
+#
+#
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -409,32 +587,6 @@ print("")
 #     """
 
 
-def score(self, X, y):
-    """ Return accuracy of model on a given dataset. Must implement own score function.
-    Args:
-        X (array-like): A 2D numpy array with data, excluding targets
-        y (array-like): A 2D numpy array with targets
-    Returns:
-        score : float
-            Mean accuracy of self.predict(X) wrt. y.
-    """
-
-
-def _shuffle_data(self, X, y):
-    """ Shuffle the data! This _ prefix suggests that this method should only be called internally.
-        It might be easier to concatenate X & y and shuffle a single 2D array, rather than
-         shuffling X and y exactly the same way, independently.
-    """
-
-
-# Not required by sk-learn but required by us for grading. Returns the weights.
-def get_weights(self):
-    return self.weights
-
-
-def add_bias(self, X):
-    biases = np.ones((len(X), 1))
-    return np.hstack((X, biases))
 
 
 # def random_weights(self, length):
@@ -447,63 +599,6 @@ def add_bias(self, X):
 #     mu, sigma = 0.0, .5
 #     dist = stats.truncnorm((a - mu) / sigma, (b - mu) / sigma, loc=mu, scale=sigma)
 #     return dist.rvs(totalNeurons)
-
-
-# Files to be read
-arff_files = [
-    "seperable",
-    # "StandardVoting",
-    # "non_seperable",
-    # "linsep2nonorigin",
-    # "data_banknote_authentication",
-]
-
-# Hyper-parameters
-learning_rate = .1
-shuffle = True
-# deterministic = 10  # -1 indicates to run nondeterministically
-
-split_data = True
-training_percentage = .7
-
-sckikitLearn = True
-
-for i in range(len(arff_files)):
-    # Get the file
-    fileName = arff_files[i] + ".arff"
-    mat = Arff(fileName, label_count=1)
-
-    # Parse the data
-    data = mat.data[:, 0:-1]
-    labels = mat.data[:, -1].reshape(-1, 1)
-    PClass = MLPClassifier([3,3], learning_rate, 0, shuffle)
-    data = PClass.add_bias(data)
-    print(fileName)
-
-    # Run the data either split or not split
-    if not split_data:
-        PClass.fit(data, labels)
-        accuracy = PClass.score(data, labels)
-        print("Epochs Completed: ", PClass.epochs_completed)
-        print("Accuray = [{:.2f}]".format(accuracy))
-        print("Final Weights = ", end='')
-        PClass.printWeights()
-    else:
-        X1, X2, y1, y2 = train_test_split(data, labels, test_size = 0.33)
-        PClass.fit(X1, y1)
-        train_accuracy = PClass.score(X1, y1)
-        test_accuracy = PClass.score(X2, y2)
-        print("Epochs Completed: ", PClass.epochs_completed)
-        print("Training Accuray = [{:.2f}]".format(train_accuracy))
-        print("Test Accuray = [{:.2f}]".format(test_accuracy))
-        print("Final Weights = ", end='')
-        PClass.printWeights()
-
-# This section runs the voting data on the scikit learn perceptron
-fileName = "StandardVoting.arff"
-mat = Arff(fileName, label_count=1)
-data = mat.data[:, 0:-1]
-labels = mat.data[:, -1].reshape(-1, 1)
 
 
 
