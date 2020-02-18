@@ -52,31 +52,89 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
             self: this allows this to be chained, e.g. model.fit(X,y).predict(X_test)
 
         """
-        self.weights = self.initialize_weights(len(X[0])) if not initial_weights else initial_weights
-        # self.weights = self.exampleWeights()
+        # self.weights = self.initialize_weights(len(X[0])) if not initial_weights else initial_weights
+        self.weights = self.exampleWeights()
 
-        numberOfEpochs = 1000
+        numberOfEpochs = 1
 
         for epoch in range(numberOfEpochs):
             for i in range(len(X)):
-                input_for_next_layer = X[i]    # This is the input 0, 1, 1  # y[i] is the target
-                all_sigmas = []
-                all_sigmas.append(copy.deepcopy(X[i]))
-                for j in range(len(self.weights)):    # Go through each layer of weights
-                    sigmas = []
-                    for k in range(len(self.weights[j])):     # Go through each row of the weights for that layer
-                        sigmas.append(self.sigmoid(self.multiply_vectors(input_for_next_layer, self.weights[j][k])))    # These are the sigma outputs
-                    if j != len(self.weights) - 1: # append bias # don't add to the very last one (the output layer)
-                        sigmas.append(1.0)
-                    input_for_next_layer = copy.deepcopy(sigmas)
-                    all_sigmas.append(input_for_next_layer)
+                prediction, sigma_values = self.predictOneRow(X[i])
+                self.back_propogate(sigma_values, y[i])
+            print("epoch: ", epoch)
 
-                self.back_propogate(all_sigmas, y[i])
+
+    def predict(self, X):
+        """ Predict all classes for a dataset X
+        Args:
+            X (array-like): A 2D numpy array with the training data, excluding targets
+        Returns:
+            array, shape (n_samples,)
+                Predicted target values per element in X.
+        """
+
+        # FIXME What is this supposed to mean??  array, shape (n_samples,)
+        returnArray = []
+        for i in range(len(X)):
+            output, sigma_values = self.predictOneRow(X[i])   # This function does not use sigma_values
+            returnArray.append(output)
+        return returnArray
+
+
+
+
+    def predictOneRow(self, X):
+        # FIXME Do I need to sigmoid the output?? what about on the last layer?? ---------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        input_for_next_layer = X  # This is the input 0, 1, 1  # y[i] is the target
+        all_sigmas = []
+        all_sigmas.append(copy.deepcopy(X))
+        for j in range(len(self.weights)):  # Go through each layer of weights
+            sigmas = []
+            for k in range(len(self.weights[j])):  # Go through each row of the weights for that layer
+                sigmas.append(self.sigmoid(self.multiply_vectors(input_for_next_layer, self.weights[j][k])))  # These are the sigma outputs
+            if j != len(self.weights) - 1:  # append bias # don't add to the very last one (the output layer)
+                sigmas.append(1.0)
+            input_for_next_layer = copy.deepcopy(sigmas)
+            all_sigmas.append(input_for_next_layer)
+
+        finalValue = all_sigmas[len(all_sigmas) - 1][0]
+
+        if finalValue > 0:
+            output = 1.0
+        else:
+            output = 0.0
+        return output, all_sigmas
+
+
+    """ Return accuracy of model on a given dataset. Must implement own score function.
+    Args:
+        X (array-like): A 2D numpy array with data, excluding targets
+        y (array-like): A 2D numpy array with targets
+    Returns:
+        score : float
+            Mean accuracy of self.predict(X) wrt. y.
+    """
+    def score(self, X, y):
+        results = []
+        outputs = self.predict(X)
+
+        for i in range(len(outputs)):
+            if abs(outputs[i] - y[i][0]) <= .1:  # if outputs[i] == y[i][0]:
+                results.append(1.0)
+            else:
+                results.append(0.0)
+        return sum(results) / len(results)
+
+
+
+
+
+
+
 
 
     def back_propogate(self, sigma_values, target):
         new_weights = copy.deepcopy(self.weights)
-
         previous_deltas = []
         previous_deltas.append(self.calc_output_delta(target, sigma_values[len(sigma_values) - 1][0]))
 
@@ -89,8 +147,8 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
                 for w in range(len(new_weights[j][k])):
                     new_weights[j][k][w] = new_weights[j][k][w] + self.calc_weight_change(self.lr, delta, sigmas[w])
 
-            #previous_deltas = [-0.00548, -0.00548]
-            if (j > 0):
+            # get the nest delta values
+            if j > 0:
                 for w in range(len(self.weights[j][0]) - 1):
                     x = 0
                     for k in range(len(self.weights[j])):
@@ -113,12 +171,12 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
         return learning_rate * delta * sigma
 
     def exampleWeights(self):
-        # first iteration
+        # # first iteration
         weights1 = [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
         weights2 = [[1.0, 1.0, 1.0]]
         return [weights1, weights2]
 
-        # second iteration
+        # # second iteration
         # weights1 = [[1, 1, 1.00113], [1, 1, 1.00113]]
         # weights2 = [[1.00420, 1.00420, 1.00575]]
         # return [weights1, weights2]
@@ -144,11 +202,10 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
             array = np.random.randn(1, 1, length)
             return array
 
-        array = [[] for x in range(len(self.hidden_layer_widths) + 1)]
-        # array = np.asarray([])
+        array = [[] for x in range(len(self.hidden_layer_widths) + 1)]     # --------------------- FIXME If you can -- Ask TA For Help -------------------
 
         for i in range(len(array)):
-            if (i == 0):
+            if i == 0:
                 array[i] = np.random.randn(self.hidden_layer_widths[i] - 1, length)
             else:
                 if i == len(self.hidden_layer_widths):
@@ -157,35 +214,7 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
                     array[i] = np.random.randn(self.hidden_layer_widths[i] - 1, self.hidden_layer_widths[i - 1])
         return array
 
-    # Do I need output layers????
-    # what about the bias?? -- is it already added into X????
-    # can I use a library??
-    # def initialize_weights(self, length):
-    #     """ Initialize weights for perceptron. Don't forget the bias!  """
-    #     layers = []
-    #
-    #     # If there are no hidden layers just handle it here
-    #     if len(self.hidden_layer_widths) == 0:
-    #         inputLayerWeights = [[1 for x in range(length)] for y in range(1)]
-    #         layers.append(inputLayerWeights)
-    #         # self.weights = layers
-    #         return layers
-    #
-    #     # Creates a list containing self.hidden_layer_widths[0] lists, each of length items, all set to 1
-    #     inputLayerWeights = [[1 for x in range(length)] for y in range(self.hidden_layer_widths[0] - 1)]
-    #     layers.append(inputLayerWeights)
-    #
-    #     # create the hidden layers
-    #     for i in range(len(self.hidden_layer_widths)):
-    #         if i == len(self.hidden_layer_widths) - 1:
-    #             hiddenLayerWeights = [[1 for x in range(self.hidden_layer_widths[i])] for y in range(1)]
-    #             layers.append(hiddenLayerWeights)
-    #             break
-    #         else:
-    #             hiddenLayerWeights = [[1 for x in range(self.hidden_layer_widths[i])] for y in range(self.hidden_layer_widths[i + 1] - 1)]
-    #             layers.append(hiddenLayerWeights)
-    #     # self.weights = layers
-    #     return layers
+
 
     def get_weights(self):
         return self.weights
@@ -203,9 +232,6 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
 
 
 
-PClass = MLPClassifier([5, 12], 1, 0, True)
-PClass.fit([[0.0, 0.0, 1.0], [0.0, 1.0, 1.0]], [1.0, 0.0])  # Both
-
 
 
 
@@ -214,19 +240,91 @@ PClass.fit([[0.0, 0.0, 1.0], [0.0, 1.0, 1.0]], [1.0, 0.0])  # Both
 
 # Hyper-parameters
 learning_rate = 1.0
-shuffle = True
-split_data = True
+shuffle = False
+split_data = False
 training_percentage = .7
-sckikitLearn = True
+sckikitLearn = False
 
 
-# PClass = MLPClassifier([3, 3], learning_rate, 0, shuffle)
-# # PClass.fit([[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]], [1.0])   # first iteration
-# # PClass.fit([[0.0, 1.0, 1.0], [0.0, 1.0, 1.0]], [0.0])   # second iteration
-#
-# PClass.fit([[0.0, 0.0, 1.0], [0.0, 1.0, 1.0]], [1.0, 0.0])  # Both
+PClass = MLPClassifier([3], learning_rate, 0, shuffle)
+PClass.fit([[0.0, 0.0, 1.0], [0.0, 1.0, 1.0]], [1.0, 0.0])  # Both
 
 print("")
+# PClass.fit([[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]], [1.0])   # first iteration
+# PClass.fit([[0.0, 1.0, 1.0]], [0.0])   # second iteration
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# input_for_next_layer = X[i]    # This is the input 0, 1, 1  # y[i] is the target
+# all_sigmas = []
+# all_sigmas.append(copy.deepcopy(X[i]))
+# for j in range(len(self.weights)):    # Go through each layer of weights
+#     sigmas = []
+#     for k in range(len(self.weights[j])):     # Go through each row of the weights for that layer
+#         sigmas.append(self.sigmoid(self.multiply_vectors(input_for_next_layer, self.weights[j][k])))    # These are the sigma outputs
+#     if j != len(self.weights) - 1: # append bias # don't add to the very last one (the output layer)
+#         sigmas.append(1.0)
+#     input_for_next_layer = copy.deepcopy(sigmas)
+#     all_sigmas.append(input_for_next_layer)
+#
+# self.back_propogate(all_sigmas, y[i])
+
+
+# Do I need output layers????
+# what about the bias?? -- is it already added into X????
+# can I use a library??
+# def initialize_weights(self, length):
+#     """ Initialize weights for perceptron. Don't forget the bias!  """
+#     layers = []
+#
+#     # If there are no hidden layers just handle it here
+#     if len(self.hidden_layer_widths) == 0:
+#         inputLayerWeights = [[1 for x in range(length)] for y in range(1)]
+#         layers.append(inputLayerWeights)
+#         # self.weights = layers
+#         return layers
+#
+#     # Creates a list containing self.hidden_layer_widths[0] lists, each of length items, all set to 1
+#     inputLayerWeights = [[1 for x in range(length)] for y in range(self.hidden_layer_widths[0] - 1)]
+#     layers.append(inputLayerWeights)
+#
+#     # create the hidden layers
+#     for i in range(len(self.hidden_layer_widths)):
+#         if i == len(self.hidden_layer_widths) - 1:
+#             hiddenLayerWeights = [[1 for x in range(self.hidden_layer_widths[i])] for y in range(1)]
+#             layers.append(hiddenLayerWeights)
+#             break
+#         else:
+#             hiddenLayerWeights = [[1 for x in range(self.hidden_layer_widths[i])] for y in range(self.hidden_layer_widths[i + 1] - 1)]
+#             layers.append(hiddenLayerWeights)
+#     # self.weights = layers
+#     return layers
+
+
+
+
 
 
 
@@ -301,14 +399,14 @@ print("")
 
 
 
-def predict(self, X):
-    """ Predict all classes for a dataset X
-    Args:
-        X (array-like): A 2D numpy array with the training data, excluding targets
-    Returns:
-        array, shape (n_samples,)
-            Predicted target values per element in X.
-    """
+# def predict(self, X):
+#     """ Predict all classes for a dataset X
+#     Args:
+#         X (array-like): A 2D numpy array with the training data, excluding targets
+#     Returns:
+#         array, shape (n_samples,)
+#             Predicted target values per element in X.
+#     """
 
 
 def score(self, X, y):
