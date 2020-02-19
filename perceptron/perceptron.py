@@ -183,7 +183,6 @@ arff_files = [
 learning_rate = .1
 shuffle = True
 deterministic = 10   # -1 indicates to run nondeterministically
-
 split_data = True
 training_percentage = .7
 

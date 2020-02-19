@@ -20,8 +20,10 @@ from sklearn.model_selection import train_test_split
 # There is never an input to a bias node
 # input_layer_number does not include bias node
 
+
+
 class MLPClassifier(BaseEstimator,ClassifierMixin):
-    def __init__(self, hidden_layer_widths, lr=.1, momentum=0, shuffle=True):
+    def __init__(self, hidden_layer_widths, lr=.1, momentum=0, shuffle=True, deterministic=-1, num_output_nodes=1):
     # def __init__(self, lr=.1, shuffle=True, deterministic=-1):
         """ Initialize class with chosen hyperparameters.
 
@@ -41,6 +43,9 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
         self.shuffle = shuffle
         self.weights = []
         self.epochs_completed = 0
+        self.prev_change_in_weights = None
+        self.deterministic = deterministic
+        self.num_output_nodes = num_output_nodes
 
     def fit(self, X, y, initial_weights=None):
         """ Fit the data; run the algorithm and adjust the weights to find a good solution
@@ -52,12 +57,11 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
             self: this allows this to be chained, e.g. model.fit(X,y).predict(X_test)
 
         """
-        # self.weights = self.initialize_weights(len(X[0])) if not initial_weights else initial_weights
-        self.weights = self.exampleWeights()
+        self.weights = self.initialize_weights(len(X[0]), self.num_output_nodes) if not initial_weights else initial_weights
+        # self.weights = self.exampleWeights()
 
-        numberOfEpochs = 1
 
-        for epoch in range(numberOfEpochs):
+        for epoch in range(self.deterministic):
             if self.shuffle:
                 X, y = self._shuffle_data(X, y)
             for i in range(len(X)):
@@ -71,7 +75,7 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
         Args:
             X (array-like): A 2D numpy array with the training data, excluding targets
         Returns:
-            array, shape (n_samples,)
+            array, shape (n_samples,)  not the one hot, just an array of all the guesses
                 Predicted target values per element in X.
         """
 
@@ -84,9 +88,14 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
 
 
 
+    # FIXME Bias!!!! ----------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # whats a good lr??    .1
+    # Use one layer of hidden nodes with the number of hidden nodes being twice the number of inputs.
+    # need more than binary output
+    # need one hot encoding
+
 
     def predictOneRow(self, X):
-        # FIXME Do I need to sigmoid the output?? what about on the last layer?? ---------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         input_for_next_layer = X  # This is the input 0, 1, 1  # y[i] is the target
         all_sigmas = []
         all_sigmas.append(copy.deepcopy(X))
@@ -99,13 +108,25 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
             input_for_next_layer = copy.deepcopy(sigmas)
             all_sigmas.append(input_for_next_layer)
 
-        finalValue = all_sigmas[len(all_sigmas) - 1][0]
-
-        if finalValue > 0:
-            output = 1.0
+        if len(all_sigmas[len(all_sigmas) - 1]) == 1:
+            finalValue = all_sigmas[len(all_sigmas) - 1][0]
+            if finalValue > 0.5:
+                output = [0.0, 1.0]
+            else:
+                output = [1.0, 0.0]
         else:
-            output = 0.0
+            # finalSigmas = all_sigmas[len(all_sigmas) - 1]
+            # output = self.get_one_hot_encoding(finalSigmas)
+            output = [0.0]
+
         return output, all_sigmas
+
+    def get_one_hot_encoding(self, in_array):
+        a = np.array(in_array)
+        b = np.zeros((a.size, a.max() + 1.0))
+        b[np.arange(a.size), a] = 1.0
+        return b
+
 
 
     """ Return accuracy of model on a given dataset. Must implement own score function.
@@ -116,38 +137,48 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
         score : float
             Mean accuracy of self.predict(X) wrt. y.
     """
-    def score(self, X, y):
-        results = []
-        outputs = self.predict(X)
-
-        for i in range(len(outputs)):
-            if abs(outputs[i] - y[i][0]) <= .1:  # if outputs[i] == y[i][0]:
-                results.append(1.0)
-            else:
-                results.append(0.0)
-        return sum(results) / len(results)
-
-
+    # def score(self, X, y):
+    #     results = []
+    #     outputs = self.predict(X)
+    #
+    #     for i in range(len(outputs)):
+    #         if abs(outputs[i] - y[i][0]) <= .1:  # if outputs[i] == y[i][0]:
+    #             results.append(1.0)
+    #         else:
+    #             results.append(0.0)
+    #     return sum(results) / len(results)
 
 
 
 
-
-
-
-    def back_propogate(self, sigma_values, target):
+    # create a global variable with the last weight changes (d_weight)
+    def back_propogate(self, sigma_values, targets):
         new_weights = copy.deepcopy(self.weights)
         previous_deltas = []
-        previous_deltas.append(self.calc_output_delta(target, sigma_values[len(sigma_values) - 1][0]))
 
-        for j in reversed(range(len(new_weights))):    # for each layer
+        if self.prev_change_in_weights == None:
+            self.prev_change_in_weights = copy.deepcopy(self.weights)  # These values will not actually be used, this is just to make it the right size so you can loop through it
+            firstIteration = True
+        else:
+            firstIteration = False
+
+        for j in range(len(targets)):
+            previous_deltas.append(self.calc_output_delta(targets[j], sigma_values[len(sigma_values) - 1][j]))
+
+        for j in reversed(range(len(new_weights))):    # for each layer (backwards)
             sigmas = sigma_values[j]
             updated_deltas = []
-            for k in range(len(new_weights[j])):
+            for k in range(len(new_weights[j])):    # For
                 delta = previous_deltas[k]
 
                 for w in range(len(new_weights[j][k])):
-                    new_weights[j][k][w] = new_weights[j][k][w] + self.calc_weight_change(self.lr, delta, sigmas[w])
+                    if firstIteration:
+                        self.prev_change_in_weights[j][k][w] = self.calc_weight_change(self.lr, delta, sigmas[w])
+                        new_weights[j][k][w] += self.calc_weight_change(self.lr, delta, sigmas[w])
+                    else:
+                        change = self.calc_weight_change(self.lr, delta, sigmas[w]) + (self.prev_change_in_weights[j][k][w] * self.momentum)
+                        new_weights[j][k][w] += change
+                        self.prev_change_in_weights[j][k][w] = change
 
             # get the nest delta values
             if j > 0:
@@ -172,16 +203,6 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
     def calc_weight_change(self, learning_rate, delta, sigma):
         return learning_rate * delta * sigma
 
-    def exampleWeights(self):
-        # # first iteration
-        weights1 = [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
-        weights2 = [[1.0, 1.0, 1.0]]
-        return [weights1, weights2]
-
-        # # second iteration
-        # weights1 = [[1, 1, 1.00113], [1, 1, 1.00113]]
-        # weights2 = [[1.00420, 1.00420, 1.00575]]
-        # return [weights1, weights2]
 
     def multiply_vectors(self, a, b):
         total = 0
@@ -197,25 +218,50 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
     def sigmoid(self, input):
         return 1/(1 + np.exp(-input))
 
-    def initialize_weights(self, length):
-        length = 3
+    def initialize_weights(self, length, outputLayerSize):
+        # for i in range(len(self.hidden_layer_widths)):
+        #     self.hidden_layer_widths[i] += 1    # This adds the bias for each layer
 
+
+        # length is the input layer size
+        if self.deterministic == -1:
+            return self.initialize_random(length, outputLayerSize)
+        else:
+            return self.initialize_zeros(length, outputLayerSize)
+
+
+    def initialize_zeros(self, length, outputLayerSize):
         if len(self.hidden_layer_widths) == 0:
-            array = np.random.randn(1, 1, length)
-            return array
+            return np.zeros((1, 1, length))
 
-        array = [[] for x in range(len(self.hidden_layer_widths) + 1)]     # --------------------- FIXME If you can -- Ask TA For Help -------------------
+        array = [[] for x in range(len(self.hidden_layer_widths) + 1)]
+
+        for i in range(len(array)):
+            if i == 0:
+                x = self.hidden_layer_widths[i] - 1
+                array[i] = np.zeros((x, length))
+            else:
+                if i == len(self.hidden_layer_widths):
+                    array[i] = np.zeros((outputLayerSize, self.hidden_layer_widths[i - 1]))
+                else:
+                    array[i] = np.zeros((self.hidden_layer_widths[i] - 1, self.hidden_layer_widths[i - 1]))
+        return array
+
+    def initialize_random(self, length, outputLayerSize):
+        if len(self.hidden_layer_widths) == 0:
+            return np.random.randn(1, 1, length)
+
+        array = [[] for x in range(len(self.hidden_layer_widths) + 1)]
 
         for i in range(len(array)):
             if i == 0:
                 array[i] = np.random.randn(self.hidden_layer_widths[i] - 1, length)
             else:
                 if i == len(self.hidden_layer_widths):
-                    array[i] = np.random.randn(1, self.hidden_layer_widths[i - 1])
+                    array[i] = np.random.randn(outputLayerSize, self.hidden_layer_widths[i - 1])
                 else:
                     array[i] = np.random.randn(self.hidden_layer_widths[i] - 1, self.hidden_layer_widths[i - 1])
         return array
-
 
 
     def get_weights(self):
@@ -246,6 +292,24 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
         return np.hstack((X, biases))
 
 
+    def exampleWeights(self):
+        # # first iteration
+        weights1 = [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
+        weights2 = [[1.0, 1.0, 1.0]]
+        return [weights1, weights2]
+
+        # # second iteration
+        # weights1 = [[1, 1, 1.00113], [1, 1, 1.00113]]
+        # weights2 = [[1.00420, 1.00420, 1.00575]]
+        # return [weights1, weights2]
+
+def targets_to_one_hot_encoding(y, num_classes):
+    return_array = []
+    for i in range(len(y)):
+        arr = np.zeros(num_classes)
+        arr[int(round(y[i][0]))] = 1
+        return_array.append(arr)
+    return return_array
 
 
 
@@ -257,38 +321,27 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
 
 
 
-# # Hyper-parameters
+
+
+
+
+        # # Hyper-parameters
 # learning_rate = 1.0
 # shuffle = False
 # split_data = False
 # training_percentage = .7
 # sckikitLearn = False
-
-
-# PClass = MLPClassifier([3], learning_rate, 0, shuffle)
-# PClass.fit([[0.0, 0.0, 1.0], [0.0, 1.0, 1.0]], [1.0, 0.0])  # Both
+#
+#
+# PClass = MLPClassifier([3], learning_rate, 0, shuffle, 1)
+# PClass.fit([[0.0, 0.0, 1.0], [0.0, 1.0, 1.0]], [[1.0], [0.0]])     # Both
 #
 # print("")
 # PClass.fit([[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]], [1.0])   # first iteration
 # PClass.fit([[0.0, 1.0, 1.0]], [0.0])   # second iteration
-#
 
 
-# def __init__(self, hidden_layer_widths, lr=.1, momentum=0, shuffle=True):
-# # def __init__(self, lr=.1, shuffle=True, deterministic=-1):
-#     self.hidden_layer_widths = hidden_layer_widths
-#     self.lr = lr
-#     self.momentum = momentum
-#     self.shuffle = shuffle
-#     self.weights = []
-#     self.epochs_completed = 0
 
-
-# FIXME Bias!!!! ----------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# You can get away with doing just the one layer
-# The output of a bias node is always one, then it is multiplied by the weight
-# There is never an input to a bias node
-# input_layer_number does not include bias node
 
 
 
@@ -301,13 +354,21 @@ arff_files = [
     # "data_banknote_authentication",
 ]
 
-# Hyper-parameters
-learning_rate = 1.0
+# # Hyper-parameters
+learning_rate = 0.1
+momentum = 0.5
+deterministic = 10
 shuffle = False
 split_data = False
-training_percentage = .7
-hidden_layer_widths = [3]
-momentum = .1
+training_percentage = 0.0
+hidden_layer_widths = [4]   # Don't forget to add one for the bias
+one_hot_encoding = False
+
+
+
+
+
+
 
 for i in range(len(arff_files)):
     # Get the file
@@ -317,9 +378,20 @@ for i in range(len(arff_files)):
     # Parse the data
     data = mat.data[:, 0:-1]
     labels = mat.data[:, -1].reshape(-1, 1)
-    PClass = MLPClassifier(hidden_layer_widths, learning_rate, momentum, shuffle)
+
+    # adjust data for one hot encoding
+    if one_hot_encoding:
+        num_output_nodes = len(mat.enum_to_str[2])
+        labels = targets_to_one_hot_encoding(labels, num_output_nodes)
+    else:
+        num_output_nodes = 1
+
+    PClass = MLPClassifier(hidden_layer_widths, learning_rate, momentum, shuffle, deterministic, num_output_nodes)
     data = PClass.add_bias(data)
     print(fileName)
+
+
+
 
     # Run the data either split or not split
     if not split_data:
@@ -345,9 +417,11 @@ for i in range(len(arff_files)):
 
 
 
-
-
-
+# a=[[0,0,0,0,0]
+#    [0,0,0,0,0]
+#    [0,0,34,34,35]
+#    [0,0,11,34,67]]
+# a[a>0]=1
 
 
 
