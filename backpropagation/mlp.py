@@ -451,6 +451,43 @@ def plotLine(data, data2, xlabel="", ylabel="", title=""):
 
 
 
+
+# This is for graph number 5
+# ind = np.arange(7)
+# training_loss =   (0.081, 0.074, 0.065, 0.045, 0.037, 0.025, .023)
+# test_loss =       (0.084, 0.078, 0.071, 0.052, 0.045, 0.031, .030)
+# validation_loss = (0.082, 0.075, 0.071, 0.053, 0.042, 0.032, .030)
+#
+# plt.bar(ind, training_loss, 0.15, color='#ff0000',label='MSE TRS')
+# plt.bar(ind + 0.15, test_loss, 0.15, color='#00ff00', label='MSE TS')
+# plt.bar(ind + 0.30, validation_loss, 0.15, color='#0000ff', label='MSE VS')
+#
+# plt.xlabel('Hidden Layer Nodes')
+# plt.ylabel('MSE')
+# plt.xticks(ind+0.15, ("1", "2", "4", "8", "16", "32", "64"))
+# plt.title("Vowel MSE vs. # Nodes in Hidden Layer")
+# plt.legend()
+# plt.show()
+# print()
+
+
+# This is for graph number 6
+ind = np.arange(7)
+
+num_epochs = (12, 17, 19, 23, 14, 20, 11)
+plt.bar(ind, num_epochs, 0.15, color='#ff0000')
+
+plt.xlabel('Momentum')
+plt.ylabel('Epochs')
+plt.xticks(ind+0.15, ("0.0", "0.1", "0.2", "0.4", "0.6", "0.8", "1.0"))
+plt.title("Vowel Epochs vs. Momentum")
+plt.legend()
+plt.show()
+print()
+
+
+
+
 # Files to be read
 arff_files = [
     # "iris",
@@ -461,15 +498,15 @@ arff_files = [
 
 # Hyper-parameters
 learning_rate = 0.1
-momentum = 0.5
+momentum = 0.8
 deterministic = -1
 shuffle = False
 split_data = True
 test_percentage = 0.25
 hidden_layer_widths = [32]
-epoch_range = 50
+epoch_range = 10
 use_scikit_learn = False
-epsilon_comparison_value = 0.0001
+epsilon_comparison_value = 0.001
 
 
 if use_scikit_learn:
@@ -533,79 +570,68 @@ for i in range(len(arff_files)):
         test_loss = PClass.MSE(X2, y2)
         # plotLine(PClass.lossesTRS, PClass.lossesVS, xlabel="Epoch", ylabel="MSE", title="Iris MSE Across Epochs")
         # plotLine(PClass.accuraciesTRS, PClass.accuraciesVS, xlabel="Epoch", ylabel="Accuracy", title="Iris Accuracy Across Epochs")
-        print("Epochs Completed: ", PClass.epochs_completed)
-        print("Training Accuray = {:.2f}".format(train_accuracy))
-        print("Test Accuray = {:.2f}".format(test_accuracy))
-        print("Training Loss = {:.2f}".format(train_loss))
-        print("Test Loss = {:.2f}".format(test_loss))
-        print("Validation Accuray = {:.2f}".format(PClass.lossesVS[len(PClass.accuraciesVS) - 1]))
-        print("Validation Loss = {:.2f}".format(PClass.lossesVS[len(PClass.lossesVS) - 1]))
-        print("Learning Rate: ", learning_rate)
-        print("\n\nFinal Weights: ")
-        PClass.printWeights()
-ls
+        print("Epochs -- momentum")
+        print("Epochs: ", PClass.epochs_completed)
+        print("Momentum: ", momentum)
+
+        # print("Epochs Completed: ", PClass.epochs_completed)
+        # print("Training Accuray = {:.2f}".format(train_accuracy))
+        # print("Test Accuray = {:.2f}".format(test_accuracy))
+        # print("Training Loss = {:.2f}".format(train_loss))
+        # print("Test Loss = {:.2f}".format(test_loss))
+        # print("Validation Accuray = {:.2f}".format(PClass.lossesVS[len(PClass.accuraciesVS) - 1]))
+        # print("Validation Loss = {:.2f}".format(PClass.lossesVS[len(PClass.lossesVS) - 1]))
+        # print("Learning Rate: ", learning_rate)
+        # print("\n\nFinal Weights: ")
+        # PClass.printWeights()
+
 print("Done")
 
 
 
 
-# Using the best learning rate I found, Graph MSE vs hidden layer nodes
-
-# Hidden Nodes = 1
-# Training Loss = 0.08
-# Test Loss = 0.08
-# Validation Loss = 0.08
-
-
-# Hidden nodes = 2
-# Training Loss = 0.07
-# Test Loss = 0.07
-# Validation Loss = 0.07
-
-# hidden nodes = 4
-# Training Loss = 0.06
-# Test Loss = 0.07
-# Validation Loss = 0.07
-
-# hidden nodes = 8
-# Training Loss = 0.04
-# Test Loss = 0.05
-# Validation Loss = 0.05
-
-
-# hidden nodes = 16
-# Training Loss = 0.03
-# Test Loss = 0.04
-# Validation Loss = 0.04
-
-
-# hidden nodes = 32
-# Training Loss = 0.02
-# Test Loss = 0.03
-# Validation Loss = 0.03
 
 
 
 
 
 
-# This is for graph number
+
+# # This is for graph number 6
 # ind = np.arange(7)
-# training_loss =   (0.081, 0.074, 0.065, 0.045, 0.037, 0.025
-# test_loss =       (0.084, 0.078, 0.071, 0.052, 0.045, 0.031
-# validation_loss = (0.082, 0.075, 0.071, 0.053, 0.042, 0.032
-#
+
+# num_epochs = (12, 17, 19, 23, 14, 20, 11)
 # plt.bar(ind, training_loss, 0.15, color='#ff0000',label='MSE TRS')
-# plt.bar(ind + 0.15, test_loss, 0.15, color='#00ff00', label='MSE TS')
-# plt.bar(ind + 0.30, validation_loss, 0.15, color='#0000ff', label='MSE VS')
-#
-# plt.xlabel('Hidden Layer Nodes')
-# plt.ylabel('MSE')
-# plt.xticks(ind+0.15, ("1", "2", "4", "8", "16", "32", "64"))
-# plt.title("Vowel MSE vs. # Nodes in Hidden Layer")
+
+# plt.xlabel('Momentum')
+# plt.ylabel('Epochs')
+# plt.xticks(ind+0.15, ("0.0", "0.1", "0.2", "0.4", "0.6", "0.8", "1.0"))
+# plt.title("Vowel Epochs vs. Momentum")
 # plt.legend()
 # plt.show()
 # print()
 
 
 
+
+
+# Epochs:  12
+# Momentum:  0.0
+
+# Epochs:  17
+# Momentum:  0.1
+
+# Epochs:  19
+# Momentum:  0.2
+
+# Epochs:  23
+# Momentum:  0.4
+
+# Epochs:  14
+# Momentum:  0.6
+
+# Epochs:  20
+# Momentum:  0.8
+
+# Epochs:  11
+# Momentum:  1.0
