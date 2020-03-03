@@ -3,24 +3,10 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 import copy
 from tools.arff import Arff
 from sklearn.model_selection import train_test_split
-# import matplotlib.pyplot as plt
-# import matplotlib
-# from matplotlib import pyplot as plt
-import sklearn
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
-
 from sklearn.neural_network import MLPClassifier as SK_MLPClassifier
-
-
-### NOTE: The only methods you are required to have are:
-#   * predict
-#   * fit
-#   * score
-#   * get_weights
-#   They must take at least the parameters below, exactly as specified. The output of
-#   get_weights must be in the same format as the example provided.
 
 
 class MLPClassifier(BaseEstimator,ClassifierMixin):
@@ -59,15 +45,10 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
                 past_weights.append(copy.deepcopy(self.weights))
 
                 self.lossesTRS.append(self.MSE(X1, y1))
-                # self.accuraciesTRS.append(self.score(X1, y1))
                 self.lossesVS.append(self.MSE(X2, y2))
-                # self.accuraciesVS.append(self.score(X2, y2))
 
                 if self.checkLosses2(self.lossesVS):
                     break
-                    # self.weights = past_weights[len(past_weights) - 5]
-
-
         else:
             for epoch in range(self.deterministic):
                 self.epochs_completed += 1
@@ -78,7 +59,6 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
                     self.back_propogate(all_sigma_values, y[i])
                 self.lossesTRS.append(self.MSE(X, y))
                 self.accuraciesTRS.append(self.score(X, y))
-
 
     def predict(self, X):
         actual_values = []
@@ -107,52 +87,6 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
 
         return one_hot_encoding, final_sigma_values, sigmas_for_full_network
 
-
-
-    # # Check if the last few score are the same
-    # def checkLosses(self, losses):
-    #     epochRange = self.epoch_range  # 10
-    #     # If loss isnt improving either, stop
-    #     if len(losses) > epochRange:
-    #         print("Losses: ", losses)
-    #         last = losses[-epochRange:]
-    #         index_of_min = np.argmin(last)
-    #         if index_of_min != 0:
-    #             return True
-    #     else:
-    #         print("Losses: ", losses)
-    #     return False
-
-
-    # def checkLosses2(self, losses):
-    #     epoch_range = self.epoch_range
-    #     if len(losses) > epoch_range:
-    #         last = losses[-epoch_range:]
-    #         print("accuracies: ", last)
-    #         for i in range(len(last) - 1):
-    #             if not round(last[i], 2) == round(last[i + 1], 2):
-    #                 return False
-    #         return True
-    #     return False
-
-
-
-
-    # def checkLosses2(self, losses):
-    #     epoch_range = self.epoch_range
-    #     if len(losses) > epoch_range:
-    #         last = losses[-epoch_range:]
-    #         # print("accuracies: ", last)
-    #         differences = 0
-    #         for i in range(len(last) - 1):
-    #             differences += last[i + 1] - last[i]
-    #         # avg = differences / len(last) - 1
-    #         print("Differences: ", differences)
-    #         if abs(differences) < .0001:
-    #             return True
-    #     return False
-
-
     def checkLosses2(self, losses):
         epoch_range = self.epoch_range
         if len(losses) > epoch_range:
@@ -172,46 +106,6 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
                 return True
         return False
 
-
-
-
-
-    # # Check if the last few score are the same
-    # def checkLosses(self, losses):
-    #     epochRange = self.epoch_range  # 10
-    #     # If loss isnt improving either, stop
-    #     if len(losses) > epochRange:
-    #         print("Losses: ", losses)
-    #         last = losses[-epochRange:]
-    #         index_of_min = np.argmin(last)
-    #         if index_of_min == 0:
-    #             return True
-    #         for i in range(len(last) - 1):
-    #             if not round(last[i], 2) == round(last[i + 1], 2):
-    #                 return False
-    #         return True
-    #     else:
-    #         print("Losses: ", losses)
-    #     return False
-    #
-    #
-    # def checkLosses2(self, losses):
-    #     epoch_range = self.epoch_range
-    #     if len(losses) > epoch_range:
-    #         last = losses[-epoch_range:]
-    #         print("accuracies: ", last)
-    #         for i in range(len(last) - 1):
-    #             if not round(last[i], 2) == round(last[i + 1], 2):
-    #                 return False
-    #         return True
-    #     return False
-    #
-
-
-
-
-
-
     def get_one_hot_encoding(self, in_array):
         list_indexes = np.argmax(in_array)
         b = np.zeros(len(in_array))
@@ -229,7 +123,6 @@ class MLPClassifier(BaseEstimator,ClassifierMixin):
     def score(self, X, y):
         results = []
         one_hot_encodings, actual_values = self.predict(X)
-        # value_to_use = actual_values
 
         for i in range(len(one_hot_encodings)):
             for j in range(len(one_hot_encodings[i])):
@@ -418,96 +311,27 @@ def plotLine(data, data2, xlabel="", ylabel="", title=""):
     plt.show()
 
 
-# Graph number 2
-# learning_rates = [0.01, 0.05, 0.1, 0.5, 1, 1.5, 5]
-# epochs = [122, 116, 88, 38, 26, 41, 16]
-# plotBar(epochs, learning_rates, xlabel="Learning Rate", ylabel="Epochs", title="Vowel Learning Rate vs. Epochs")
-
-
-
-
-
-# This is for graph number 3
-# training_loss = [0.06, 0.03, 0.03, 0.04, 0.05, 0.06, 0.09]
-# test_loss = [0.06, 0.04, 0.04, 0.05, 0.06, 0.06, 0.09]
-# validation_loss = [0.06, 0.04, 0.04, 0.05, 0.05, 0.06, 0.09]
-#
-# ind = np.arange(7)
-# training_loss = (0.06, 0.03, 0.03, 0.04, 0.05, 0.06, 0.09)
-# test_loss = (0.06, 0.04, 0.04, 0.05, 0.06, 0.06, 0.09)
-# validation_loss = (0.06, 0.04, 0.04, 0.05, 0.05, 0.06, 0.09)
-#
-# plt.bar(ind, training_loss, 0.15, color='#ff0000',label='MSE TRS')
-# plt.bar(ind + 0.15, test_loss, 0.15, color='#00ff00', label='MSE TS')
-# plt.bar(ind + 0.30, validation_loss, 0.15, color='#0000ff', label='MSE VS')
-#
-# plt.xlabel('Learning Rate')
-# plt.ylabel('MSE')
-# plt.xticks(ind+0.15, ("0.01", "0.05", "0.1", "0.5", "1", "1.5", "5"))
-# plt.title("Vowel MSE vs. Learning Rate")
-# plt.legend()
-# plt.show()
-# print()
-
-
-
-
-# This is for graph number 5
-# ind = np.arange(7)
-# training_loss =   (0.081, 0.074, 0.065, 0.045, 0.037, 0.025, .023)
-# test_loss =       (0.084, 0.078, 0.071, 0.052, 0.045, 0.031, .030)
-# validation_loss = (0.082, 0.075, 0.071, 0.053, 0.042, 0.032, .030)
-#
-# plt.bar(ind, training_loss, 0.15, color='#ff0000',label='MSE TRS')
-# plt.bar(ind + 0.15, test_loss, 0.15, color='#00ff00', label='MSE TS')
-# plt.bar(ind + 0.30, validation_loss, 0.15, color='#0000ff', label='MSE VS')
-#
-# plt.xlabel('Hidden Layer Nodes')
-# plt.ylabel('MSE')
-# plt.xticks(ind+0.15, ("1", "2", "4", "8", "16", "32", "64"))
-# plt.title("Vowel MSE vs. # Nodes in Hidden Layer")
-# plt.legend()
-# plt.show()
-# print()
-
-
-# This is for graph number 6
-ind = np.arange(7)
-
-num_epochs = (12, 17, 19, 23, 14, 20, 11)
-plt.bar(ind, num_epochs, 0.15, color='#ff0000')
-
-plt.xlabel('Momentum')
-plt.ylabel('Epochs')
-plt.xticks(ind+0.15, ("0.0", "0.1", "0.2", "0.4", "0.6", "0.8", "1.0"))
-plt.title("Vowel Epochs vs. Momentum")
-plt.legend()
-plt.show()
-print()
-
-
 
 
 # Files to be read
 arff_files = [
     # "iris",
-    "vowel",
+    # "vowel",
     # "linsep2nonorigin",
-    # "data_banknote_authentication",
+    "data_banknote_authentication",
 ]
 
 # Hyper-parameters
 learning_rate = 0.1
-momentum = 0.8
-deterministic = -1
+momentum = 0.5
+deterministic = 10
 shuffle = False
-split_data = True
+split_data = False
 test_percentage = 0.25
-hidden_layer_widths = [32]
-epoch_range = 10
+hidden_layer_widths = []
+epoch_range = 30
 use_scikit_learn = False
 epsilon_comparison_value = 0.001
-
 
 if use_scikit_learn:
     # This section runs the voting data on the scikit learn perceptron
@@ -515,15 +339,25 @@ if use_scikit_learn:
     mat = Arff(fileName,label_count=1)
     data = mat.data[:,0:-1]
     labels = mat.data[:,-1].reshape(-1,1)
-    hidden_layer_widths.append((2 * len(data[0])) + 1)
 
-    clf = SK_MLPClassifier(hidden_layer_sizes=hidden_layer_widths, activation='relu', solver='adam', alpha=0.0001,batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5, max_iter=200, shuffle=True,random_state=None, tol=0.0001, verbose=False, warm_start=False, momentum=0.9, nesterovs_momentum=True, early_stopping=False,validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08, n_iter_no_change=10)
+    # hyper-parameters
+    hidden_layer_widths.append((2 * len(data[0])) + 1)
+    # hidden_layer_widths = [64]
+    learning_rate = .01
+    activation = 'relu'
+    momentum = 0.4
+    max_iter = 5000
+
+    clf = SK_MLPClassifier(hidden_layer_sizes=hidden_layer_widths, activation=activation, solver='adam', alpha=0.0001,batch_size='auto', learning_rate='constant', learning_rate_init=learning_rate, power_t=0.5, max_iter=max_iter, shuffle=True,random_state=None, tol=0.0001, verbose=False, warm_start=False, momentum=momentum, nesterovs_momentum=True, early_stopping=False,validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08, n_iter_no_change=10)
     X1, X2, y1, y2 = train_test_split(data, labels, test_size=test_percentage)
     result = clf.fit(X1, y1)
-    prd_r = clf.predict(X2)
-    # test_acc = accuracy_score(ts_y, prd_r) * 100.
-    loss_values = clf.loss_curve_
-    print(loss_values)
+    accuracy = clf.score(X2, y2)  # .94
+    loss = clf.loss_   # .036
+    # print("Epochs Completed: ", PClass.epochs_completed)
+    print("Accuray = {:.2f}".format(accuracy))
+    print("Loss = {:.2f}".format(loss))
+    print()
+
 
 
 for i in range(len(arff_files)):
@@ -540,7 +374,7 @@ for i in range(len(arff_files)):
         data = np.delete(data, 0, 1)  # delete second column of C
         data = np.delete(data, 0, 1)  # delete second column of C
 
-    # hidden_layer_widths.append((2 * len(data[0])) + 1)
+    hidden_layer_widths.append((2 * len(data[0])) + 1)
 
     num_output_nodes = len(mat.enum_to_str[len(mat.enum_to_str) - 1])
     labels = targets_to_one_hot_encoding(labels, num_output_nodes)
@@ -561,48 +395,86 @@ for i in range(len(arff_files)):
         print("Done")
 
     else:
-        # FIXME make sure shuffle and split data work  (Maybe refactor this to make it more concise)
         X1, X2, y1, y2 = train_test_split(data, labels, test_size = test_percentage)
         PClass.fit(X1, y1)
         train_accuracy = PClass.score(X1, y1)
         test_accuracy = PClass.score(X2, y2)
         train_loss = PClass.MSE(X1, y1)
         test_loss = PClass.MSE(X2, y2)
-        # plotLine(PClass.lossesTRS, PClass.lossesVS, xlabel="Epoch", ylabel="MSE", title="Iris MSE Across Epochs")
-        # plotLine(PClass.accuraciesTRS, PClass.accuraciesVS, xlabel="Epoch", ylabel="Accuracy", title="Iris Accuracy Across Epochs")
-        print("Epochs -- momentum")
-        print("Epochs: ", PClass.epochs_completed)
-        print("Momentum: ", momentum)
-
-        # print("Epochs Completed: ", PClass.epochs_completed)
-        # print("Training Accuray = {:.2f}".format(train_accuracy))
-        # print("Test Accuray = {:.2f}".format(test_accuracy))
-        # print("Training Loss = {:.2f}".format(train_loss))
-        # print("Test Loss = {:.2f}".format(test_loss))
-        # print("Validation Accuray = {:.2f}".format(PClass.lossesVS[len(PClass.accuraciesVS) - 1]))
-        # print("Validation Loss = {:.2f}".format(PClass.lossesVS[len(PClass.lossesVS) - 1]))
-        # print("Learning Rate: ", learning_rate)
-        # print("\n\nFinal Weights: ")
-        # PClass.printWeights()
+        print("Epochs Completed: ", PClass.epochs_completed)
+        print("Training Accuray = {:.2f}".format(train_accuracy))
+        print("Test Accuray = {:.2f}".format(test_accuracy))
+        print("Training Loss = {:.2f}".format(train_loss))
+        print("Test Loss = {:.2f}".format(test_loss))
+        print("Validation Accuray = {:.2f}".format(PClass.lossesVS[len(PClass.accuraciesVS) - 1]))
+        print("Validation Loss = {:.2f}".format(PClass.lossesVS[len(PClass.lossesVS) - 1]))
+        print("Learning Rate: ", learning_rate)
+        print("\n\nFinal Weights: ")
+        PClass.printWeights()
 
 print("Done")
 
 
 
 
+# The following are different plots
+
+# Graph number 2
+# learning_rates = [0.01, 0.05, 0.1, 0.5, 1, 1.5, 5]
+# epochs = [122, 116, 88, 38, 26, 41, 16]
+# plotBar(epochs, learning_rates, xlabel="Learning Rate", ylabel="Epochs", title="Vowel Learning Rate vs. Epochs")
 
 
-
-
-
-
-
-# # This is for graph number 6
+# # This is for graph number 3
+# training_loss = [0.06, 0.03, 0.03, 0.04, 0.05, 0.06, 0.09]
+# test_loss = [0.06, 0.04, 0.04, 0.05, 0.06, 0.06, 0.09]
+# validation_loss = [0.06, 0.04, 0.04, 0.05, 0.05, 0.06, 0.09]
+#
 # ind = np.arange(7)
-
-# num_epochs = (12, 17, 19, 23, 14, 20, 11)
+# training_loss = (0.06, 0.032, 0.03, 0.04, 0.05, 0.06, 0.09)
+# test_loss = (0.06, 0.042, 0.04, 0.05, 0.06, 0.06, 0.09)
+# validation_loss = (0.06, 0.045, 0.04, 0.05, 0.05, 0.06, 0.09)
+#
 # plt.bar(ind, training_loss, 0.15, color='#ff0000',label='MSE TRS')
+# plt.bar(ind + 0.15, test_loss, 0.15, color='#00ff00', label='MSE TS')
+# plt.bar(ind + 0.30, validation_loss, 0.15, color='#0000ff', label='MSE VS')
+#
+# plt.xlabel('Learning Rate')
+# plt.ylabel('MSE')
+# plt.xticks(ind+0.15, ("0.01", "0.05", "0.1", "0.5", "1", "1.5", "5"))
+# plt.title("Vowel MSE vs. Learning Rate")
+# plt.legend()
+# plt.show()
+# print()
 
+
+
+
+# This is for graph number 5
+# ind = np.arange(8)
+# training_loss =   (0.081, 0.074, 0.065, 0.045, 0.037, 0.025, .023, .039)
+# test_loss =       (0.084, 0.078, 0.071, 0.052, 0.045, 0.031, .030, .041)
+# validation_loss = (0.082, 0.075, 0.071, 0.053, 0.042, 0.032, .030, .044)
+#
+# plt.bar(ind, training_loss, 0.15, color='#ff0000',label='MSE TRS')
+# plt.bar(ind + 0.15, test_loss, 0.15, color='#00ff00', label='MSE TS')
+# plt.bar(ind + 0.30, validation_loss, 0.15, color='#0000ff', label='MSE VS')
+#
+# plt.xlabel('Hidden Layer Nodes')
+# plt.ylabel('MSE')
+# plt.xticks(ind+0.15, ("1", "2", "4", "8", "16", "32", "64", "128"))
+# plt.title("Vowel MSE vs. # Nodes in Hidden Layer")
+# plt.legend()
+# plt.show()
+# print()
+
+
+# # # This is for graph number 6
+# ind = np.arange(7)
+#
+# num_epochs = (40, 35, 32, 23, 22, 30, 45)
+# plt.bar(ind, num_epochs, 0.15, color='#ff0000')
+#
 # plt.xlabel('Momentum')
 # plt.ylabel('Epochs')
 # plt.xticks(ind+0.15, ("0.0", "0.1", "0.2", "0.4", "0.6", "0.8", "1.0"))
@@ -611,27 +483,3 @@ print("Done")
 # plt.show()
 # print()
 
-
-
-
-
-# Epochs:  12
-# Momentum:  0.0
-
-# Epochs:  17
-# Momentum:  0.1
-
-# Epochs:  19
-# Momentum:  0.2
-
-# Epochs:  23
-# Momentum:  0.4
-
-# Epochs:  14
-# Momentum:  0.6
-
-# Epochs:  20
-# Momentum:  0.8
-
-# Epochs:  11
-# Momentum:  1.0

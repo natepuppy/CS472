@@ -1,0 +1,21 @@
+%
+% 9 instances
+%
+
+@relation pizza
+
+@attribute meat 	{N,Y}
+@attribute crust	{Deep,Stuffed,Thin}
+@attribute veg		{N,Y}
+@attribute quality	{Bad,Good,Great}
+
+@data
+Y,Thin,N,Great
+N,Deep,N,Bad
+N,Stuffed,Y,Good
+Y,Stuffed,Y,Great
+Y,Deep,N,Good
+Y,Deep,Y,Great
+N,Thin,Y,Good
+Y,Deep,N,Good
+N,Thin,N,Bad
