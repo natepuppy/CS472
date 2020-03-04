@@ -4,11 +4,11 @@ from tools.arff import Arff
 from sklearn.model_selection import train_test_split
 import math as math
 import copy
-from sklearn import tree
+# from sklearn import tree
+from sklearn.model_selection import KFold
+from sklearn.tree import DecisionTreeClassifier
 
 # TODO:
-# 1: Implement the score and
-# 2: Implement predict (10 fold Cross Validation)
 # 3: Print the tree using export_graphviz
 # 5: Test on evaluation data, create evaluation.csv
 # 5: Implement the SK decision tree
@@ -177,6 +177,17 @@ class DTClassifier(BaseEstimator,ClassifierMixin):
 
         return split_data
 
+    # def create_cv_sets(self, X, y):
+    #     x = KFold(n_splits=2, random_state=None, shuffle=False)
+    # # or
+    #     cross_val_score(clf, iris.data, iris.target, cv=10)
+
+
+
+
+# from sklearn.model_selection import KFold
+
+
 def handle_unkowns(X, y, output_classes):
     # X, y = delete_if_over_half_are_missing(X, y)
     means = get_mean_foreach_output_class(X, y, output_classes)
@@ -276,7 +287,11 @@ def start():
         PClass.fit(X, y)
 
         score = PClass.score(X, y)
+
+        sk_score = run_sk_learn(X, y)
+
         print(score)
+        print(sk_score)
 
 
 
@@ -301,8 +316,15 @@ def seperate_train_and_test():
     print(score)
 
 
+def run_sk_learn(X, y):
+    d_t_classifier = DecisionTreeClassifier()
+    d_t_classifier.fit(X, y)
+    score = d_t_classifier.score(X, y)
+    return score
 
-seperate_train_and_test()
+
+
+# seperate_train_and_test()
 start()
 
 
