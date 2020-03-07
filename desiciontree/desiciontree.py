@@ -1,36 +1,24 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from tools.arff import Arff
-from sklearn.model_selection import train_test_split
 import math as math
 import copy
-# from sklearn import tree
-from sklearn.model_selection import KFold
 from sklearn.tree import DecisionTreeClassifier
-
-# TODO:
-# 3: Print the tree using export_graphviz
-# 5: Test on evaluation data, create evaluation.csv
-# 5: Implement the SK decision tree
-
+from sklearn.model_selection import cross_validate
 
 
 class Node:
-    def __init__(self, attribute_dict, id, is_leaf):
+    def __init__(self, attribute_dict, id):
         self.id = id    # Which feature this is
         self.children = []
         self.attribute_dict = attribute_dict
-        self.is_leaf = is_leaf
-
 
 
 class DTClassifier(BaseEstimator,ClassifierMixin):
-    def __init__(self,counts=None):
-        self.target_counts = counts[len(counts) - 1]
-        counts.pop()
+    def __init__(self,counts=None,target_counts=None):
+        self.target_counts=target_counts
         self.counts = counts
         self.tree = None
-
 
     def fit(self, X, y):
         X = np.hstack((X, y))
@@ -43,23 +31,27 @@ class DTClassifier(BaseEstimator,ClassifierMixin):
         if len(X) == 0:
             return 0.0
 
+        num_attributes = len(X[0]) - 1
+
         # Base Case 1: Pure Node -- All the data is of the same output class
-        y_vals = X[:,(len(X[0]) - 1)]
+        y_vals = X[:,-1]
         unique_values = np.unique(y_vals)
         if len(unique_values) == 1:
             return unique_values[0]
 
         # Base Case 3: There are no more features
         if len(counts) == 0:
-            return self.find_most_common(X[:,(len(X[0]) - 1)])
+            return self.find_most_common(X[:,-1])
 
         entropies = []
-        for i in range(len(X[0]) - 1):
-            entropies.append(self.calcEntropy(counts[i], X[:,i], X[:,len(X[0])-1]))
-        min_index = np.argmin(entropies)
-        node = Node(counts[min_index], attribute_ids[min_index], False)
-        split_data = self.split(min_index, counts[min_index], X)
+        for i in range(num_attributes):
+            entropies.append(self.calcEntropy(counts[i], X[:,i], X[:,-1]))   # calcEntropy(self, attribute, col, y):
+        if len(entropies) == 0:
+            print()
 
+        min_index = np.argmin(entropies)
+        node = Node(counts[min_index], attribute_ids[min_index])
+        split_data = self.split(min_index, counts[min_index], X)
         del counts[min_index]
         del attribute_ids[min_index]
 
@@ -69,64 +61,29 @@ class DTClassifier(BaseEstimator,ClassifierMixin):
         return node
 
     def predict(self, X):
-        """ Predict all classes for a dataset X
-        Args:
-            X (array-like): A 2D numpy array with the training data, excluding targets
-        Returns:
-            array, shape (n_samples,)
-                Predicted target values per element in X.
-        """
         predictions = []
         for i in range(len(X)):
             predictions.append(self.predict_one(X[i]))
         return predictions
-
 
     def predict_one(self, X_i):
         node = self.tree
         while True:
             if isinstance(node, float) or isinstance(node, int):
                 return node
-
             attribute_class = node.id
             attribute_instance_value = X_i[attribute_class]
             node = node.children[int(attribute_instance_value)]
 
-
-
-
-
-
-
-
-
-
     def score(self, X, y):
-        """ Return accuracy of model on a given dataset. Must implement own score function.
-
-        Args:
-            X (array-like): A 2D numpy array with data, excluding targets
-            y (array-li    def _shuffle_data(self, X, y):
-        """
         predictions = self.predict(X)
         total = 0
         for i in range(len(y)):
-            # print(y[i][0], " ", predictions[i])
             if abs(y[i][0] - predictions[i]) < .001:
                 total += 1
             else:
                 total += 0
-
         return total / len(y)
-
-
-
-
-
-
-
-
-
 
     def find_most_common(self, arr):
         if len(arr) == 0:
@@ -140,7 +97,6 @@ class DTClassifier(BaseEstimator,ClassifierMixin):
             counts.append(total_instances)
         x = np.argmax(counts)
         return float(x)
-
 
     def calcEntropy(self, attribute, col, y):   # attribute = dict = {0: 'N', 1: 'Y'}
         num_instances = len(col)
@@ -177,21 +133,9 @@ class DTClassifier(BaseEstimator,ClassifierMixin):
 
         return split_data
 
-    # def create_cv_sets(self, X, y):
-    #     x = KFold(n_splits=2, random_state=None, shuffle=False)
-    # # or
-    #     cross_val_score(clf, iris.data, iris.target, cv=10)
-
-
-
-
-# from sklearn.model_selection import KFold
-
-
 def handle_unkowns(X, y, output_classes):
     # X, y = delete_if_over_half_are_missing(X, y)
     means = get_mean_foreach_output_class(X, y, output_classes)
-
     num_instances = len(X)
     num_attributes = len(X[0])
 
@@ -202,21 +146,6 @@ def handle_unkowns(X, y, output_classes):
                     X[j][i] = means[i][k]
 
     return X, y
-
-
-
-    # for i in range(num_attributes):   # for each attribute
-    #     total_real_instances = 0
-    #     total = 0
-    #     for j in range(num_instances):    # for each instance
-    #         if not math.isnan( X[j][i] ):
-    #             total += X[j][i]
-    #             total_real_instances += 1
-    #     mean = total / total_real_instances
-    #     all_means.append(mean)
-
-
-
 
 # delete if over half the attributes are missing, else, keep them and handle them in a different way
 def delete_if_over_half_are_missing(X, y):
@@ -238,7 +167,6 @@ def delete_if_over_half_are_missing(X, y):
 def get_mean_foreach_output_class(X, y, output_classes):
     num_instances = len(X)
     num_attributes = len(X[0])
-
     avg_values = [[0 for i in range(len(output_classes))] for j in range(len(X[0]))]     # number_of_attributes x num_output_classes
 
     for k in range(len(output_classes)):        # bad, good, best
@@ -253,22 +181,52 @@ def get_mean_foreach_output_class(X, y, output_classes):
             avg_values[i][k] = mean
     return avg_values
 
+def run_sk_learn(X, y):
+    d_t_classifier = DecisionTreeClassifier()
+    d_t_classifier.fit(X, y)
+    score = d_t_classifier.score(X, y)
+    return score, d_t_classifier
 
-def start():
+def seperate_train_and_test():
+    # Get the file
+    fileName = "zoo.arff"
+    print(fileName)
+    mat = Arff(fileName, label_count=1)
+
+    # Parse the data
+    data = mat.data[:, 0:-1]
+    labels = mat.data[:, -1].reshape(-1, 1)
+    X, y = handle_unkowns(data, labels, mat.enum_to_str[len(mat.enum_to_str) - 1])
+    counts = mat.enum_to_str
+    target_counts = counts[len(counts) - 1]
+    counts.pop()
+    counts = counts
+
+    PClass = DTClassifier(counts, target_counts)
+    PClass.fit(X, y)
+
+    fileName = "all_zoo.arff"
+    mat2 = Arff(fileName, label_count=1)
+    data2 = mat2.data[:, 0:-1]
+    labels2 = mat2.data[:, -1].reshape(-1, 1)
+    X2, y2 = handle_unkowns(data2, labels2, mat2.enum_to_str[len(mat2.enum_to_str) - 1])
+
+    score = PClass.score(X2, y2)
+    print("My score: ", score)
+
+
+def start(type=1):
     # Files to be read
     arff_files = [
-        "voting",
-        "pizza",
-        "zoo",
-        "lenses",
-        "all_zoo",
-        "all_lenses",
+        "motorcyc_crash_severity"
+        # "voting",
+        # "pizza",
+        # "zoo",
+        # "lenses",
+        # "all_zoo",
+        # "all_lenses",
+        # "cars",
     ]
-
-
-
-
-
 
     for i in range(len(arff_files)):
         # Get the file
@@ -279,74 +237,49 @@ def start():
         # Parse the data
         data = mat.data[:,0:-1]
         labels = mat.data[:,-1].reshape(-1,1)
-
         X, y = handle_unkowns(data, labels, mat.enum_to_str[len(mat.enum_to_str) - 1])
+        counts = mat.enum_to_str
+        target_counts = counts[len(counts) - 1]
+        counts.pop()
+        counts = counts
 
-        # Create and run classifier
-        PClass = DTClassifier(counts=mat.enum_to_str)
-        PClass.fit(X, y)
+        if type == 0:
+            PClass = DTClassifier(counts, target_counts)
+            PClass.fit(X, y)
+            score = PClass.score(X, y)
+            print("My score: ", score)
 
-        score = PClass.score(X, y)
+        if type == 1:
+            PClass2 = DTClassifier(counts, target_counts)
+            scores = cross_validate(PClass2, X, y, cv=10)
+            sum1 = sum(scores['test_score'])
+            sum2 = sum(scores['train_score'])
+            avg = sum1 / len(scores['test_score'])
+            avg2 = sum2 / len(scores['train_score'])
 
-        sk_score = run_sk_learn(X, y)
+            print("Test score average: ", avg)
+            print("Test score ", scores['test_score'])
+            print("Train score average: ", avg2)
+            print("Train score ", scores['train_score'])
+            print()
 
-        print(score)
-        print(sk_score)
+        if type == 2:
+            d_t_classifier = DecisionTreeClassifier(max_leaf_nodes=10)
+            scores = cross_validate(d_t_classifier, X, y, cv=10)
+            sum1 = sum(scores['test_score'])
+            sum2 = sum(scores['train_score'])
+            avg = sum1 / len(scores['test_score'])
+            avg2 = sum2 / len(scores['train_score'])
 
+            print("Test score average: ", avg)
+            print("Test score ", scores['test_score'])
+            print("Train score average: ", avg2)
+            print("Train score ", scores['train_score'])
+            print()
+            # sk_score, clf = run_sk_learn(X, y)
+            # tree.export_graphviz(clf, out_file="tree.dot", max_depth=2)
+            # # # dot -Tpng tree.dot -o tree.png
+            # print(sk_score)
 
-
-
-def seperate_train_and_test():
-    mat = Arff("zoo.arff", label_count=1)
-    data = mat.data[:, 0:-1]
-    labels = mat.data[:, -1].reshape(-1, 1)
-    # X, y = handle_unkowns(data, labels, mat.enum_to_str[len(mat.enum_to_str) - 1])
-
-    # Create and run classifier
-    PClass = DTClassifier(counts=mat.enum_to_str)
-    PClass.fit(data, labels)
-
-    mat2 = Arff("all_zoo.arff", label_count=1)
-    data2 = mat2.data[:, 0:-1]
-    labels2 = mat.data[:, -1].reshape(-1, 1)
-    # X, y = handle_unkowns(data, labels, mat.enum_to_str[len(mat.enum_to_str) - 1])
-    pred = PClass.predict(data2)
-    np.savetxt("pred_zoo.csv", pred, delimiter=",")
-    score = PClass.score(data2, labels2)
-    print(score)
-
-
-def run_sk_learn(X, y):
-    d_t_classifier = DecisionTreeClassifier()
-    d_t_classifier.fit(X, y)
-    score = d_t_classifier.score(X, y)
-    return score
-
-
-
-# seperate_train_and_test()
-start()
-
-
-
-
-
-""" Initialize class with chosen hyperparameters.
-Args:
-    counts = how many types for each attribute
-Example:
-    DT  = DTClassifier()
-"""
-
-""" Fit the data; Make the Desicion tree
-Args:
-    X (array-like): A 2D numpy array with the training data, excluding targets
-    y (array-like): A 2D numpy array with the training targets
-Returns:
-    self: this allows this to be chained, e.g. model.fit(X,y).predict(X_test)
-"""
-
-
-
-
-
+seperate_train_and_test()
+start(1)
