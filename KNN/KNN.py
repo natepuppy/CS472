@@ -16,7 +16,6 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
         self.y = y
         return self
 
-
     def predict(self, data):
         return_values = []
 
@@ -36,23 +35,12 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
                         indexes[max_value_index] = j
 
             # now that we have the k closest instances, find the correct output class, or regression value
-
             if self.columntype[-1] != 'nominal':
                 output = self.determine_regression_prediction(distances, indexes)
             else:
                 output = self.determine_nominal_class(distances, indexes)
-
             return_values.append(output)
         return return_values
-
-    # out_classes = []
-    # for k in range(len(indexes)):
-    #     index = indexes[k]
-    #     out_class = self.y[index]
-    #     out_classes.append(out_class)
-    # values, counts = np.unique(out_classes, return_counts=True)
-    # ind = np.argmax(counts)
-    # return_values.append(values[ind])
 
     def calculate_distance(self, arr1, arr2):
         total = 0
@@ -73,16 +61,28 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
         return total
 
     def determine_nominal_class(self, distances, indexes):
-        if self.weight_type == 'inverse_distance':
-
         out_classes = []
         for k in range(len(indexes)):
             index = indexes[k]
             out_class = self.y[index]
             out_classes.append(out_class)
+
+        # counts = how many of that output class there are, value = all the distinct output classes
         values, counts = np.unique(out_classes, return_counts=True)
-        ind = np.argmax(counts)
-        return values[ind]
+
+        if self.weight_type == 'inverse_distance':     # calculate the weighted votes
+            weighted_votes = []
+            for k in range(len(values)):   # for each type of out class
+                current_vote = 0
+                for l in range(len(out_classes)):   # for each one in the k instances
+                    if out_classes[l] == values[k]:
+                        current_vote += distances[l]
+                weighted_votes.append(current_vote)
+            ind = np.argmax(weighted_votes)
+            return values[ind]
+        else:  # get the most common output class
+            ind = np.argmax(counts)
+            return values[ind]
 
     def determine_regression_prediction(self, distances, indexes):
         numerator = 0
@@ -93,33 +93,28 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
             denominator += distances[k]
         return numerator / denominator
 
-
-            # if self.weight_type == 'inverse_distance':
-            #     # dist = 1 / ((np.sqrt(np.sum((data[i] - self.X[j]) ** 2))) ** 2)
-            # else:
-            #     # dist = np.sqrt(np.sum((data[i] - self.X[j]) ** 2))
-
-
-
-
-
-    # def euclidean_distance_2(self, x1, y1, x2, y2):
-    #     math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
-
-
-
-
-
     def score(self, X, y):
         predictions = self.predict(X)
-        total = 0
-        for i in range(len(y)):
-            print(y[i][0], " - ", predictions[i])
-            if abs(y[i][0] - predictions[i]) < .001:
-                total += 1
-            else:
-                total += 0
-        return total / len(y)
+
+        if self.columntype[-1] == 'nominal':
+            total = 0
+            for i in range(len(y)):
+                if abs(y[i][0] - predictions[i]) < .001:
+                    total += 1
+                else:
+                    total += 0
+            return total / len(y)
+        else:
+            total = 0
+            for i in range(len(y)):
+                total += abs(y[i][0] - predictions[i])
+            return total / len(y)
+
+
+
+
+
+
 
 
 
@@ -152,11 +147,10 @@ def start():
     ]
 
     # hyper-parameters
-    test_index = 5
-    train_index = 6
-    weight_type = 'distance'   # inverse_distance or distance
+    test_index = 3
+    train_index = 4
+    weight_type = 'inverse_distance'   # inverse_distance or distance
     k_value = 3
-    regression = False
     normalization = False
 
     # Get the file and Parse the data
@@ -187,7 +181,7 @@ start()
 # TODO
 # How to handle real outputs
 # is normalization only for the input features? -- yes i think
-# normalize test and train?
+# normalize test and train? -- yes i think
 
 
 
@@ -223,3 +217,48 @@ Args:
     columntype for each column tells you if continues[real] or if nominal[categoritcal].
     weight_type: inverse_distance voting or if non distance weighting. Options = ["no_weight","inverse_distance"]
 """
+
+# out_classes = []
+# for k in range(len(indexes)):
+#     index = indexes[k]
+#     out_class = self.y[index]
+#     out_classes.append(out_class)
+# values, counts = np.unique(out_classes, return_counts=True)
+# ind = np.argmax(counts)
+# return_values.append(values[ind])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# if self.weight_type == 'inverse_distance':
+#     # dist = 1 / ((np.sqrt(np.sum((data[i] - self.X[j]) ** 2))) ** 2)
+# else:
+#     # dist = np.sqrt(np.sum((data[i] - self.X[j]) ** 2))
+
+
+# def euclidean_distance_2(self, x1, y1, x2, y2):
+#     math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
+
+
+
+
