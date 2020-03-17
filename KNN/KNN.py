@@ -19,26 +19,39 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
     def predict(self, data):
         return_values = []
 
-        for i in range(len(data)):  # each instance in the test set
+        for i in range(len(data)):     # FIXME IS there a fatser way than this??
+            percent_completed = (i / len(data)) * 100
+            print(round(percent_completed, 4), "%")
+
             distances = []
             indexes = []
+            outputs = []
             for j in range(len(self.X)):   # each instance in the train set
                 dist = self.calculate_distance(data[i], self.X[j])
 
                 if len(distances) < self.k_value:
                     distances.append(dist)
                     indexes.append(j)
+                    outputs.append(self.y[j])
                 else:
-                    max_value_index = int(np.argmax(distances))
-                    if distances[max_value_index] > dist:
-                        distances[max_value_index] = dist
-                        indexes[max_value_index] = j
+                    if self.weight_type == 'inverse_distance':
+                        min_value_index = int(np.argmin(distances))
+                        if distances[min_value_index] < dist:
+                            distances[min_value_index] = dist
+                            indexes[min_value_index] = j
+                            outputs[min_value_index] = self.y[j]
+                    else:
+                        max_value_index = int(np.argmax(distances))
+                        if distances[max_value_index] > dist:
+                            distances[max_value_index] = dist
+                            indexes[max_value_index] = j
+                            outputs[max_value_index] = self.y[j]
 
-            # now that we have the k closest instances, find the correct output class, or regression value
-            if self.columntype[-1] != 'nominal':
-                output = self.determine_regression_prediction(distances, indexes)
-            else:
-                output = self.determine_nominal_class(distances, indexes)
+                # now that we have the k closest instances, find the correct output class, or regression value
+                if self.columntype[-1] != 'nominal':
+                    output = self.determine_regression_prediction(distances, indexes, outputs)
+                else:
+                    output = self.determine_nominal_class(distances, indexes, outputs)
             return_values.append(output)
         return return_values
 
@@ -56,21 +69,22 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
         total += np.sqrt(total)
         if self.weight_type == 'inverse_distance':
             if total == 0:
-                return 0
-            return 1 / (total ** 2)
+                return 1   # FIXME!!!
+            total = 1 / (total ** 2)
         return total
 
-    def determine_nominal_class(self, distances, indexes):
-        out_classes = []
-        for k in range(len(indexes)):
-            index = indexes[k]
-            out_class = self.y[index]
-            out_classes.append(out_class)
+    def determine_nominal_class(self, distances, indexes, outputs):
+        out_classes = outputs
+        # out_classes = []
+        # for k in range(len(indexes)):
+        #     index = indexes[k]
+        #     out_class = self.y[index]
+        #     out_classes.append(out_class)
 
         # counts = how many of that output class there are, value = all the distinct output classes
         values, counts = np.unique(out_classes, return_counts=True)
 
-        if self.weight_type == 'inverse_distance':     # calculate the weighted votes
+        if self.weight_type == 'inverse_distance':     # calculate the weighted votes   # FIXME TODO!  Probably broken here!
             weighted_votes = []
             for k in range(len(values)):   # for each type of out class
                 current_vote = 0
@@ -84,7 +98,7 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
             ind = np.argmax(counts)
             return values[ind]
 
-    def determine_regression_prediction(self, distances, indexes):
+    def determine_regression_prediction(self, distances, indexes, outputs):
         numerator = 0
         denominator = 0
         for k in range(len(indexes)):
@@ -99,7 +113,7 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
         if self.columntype[-1] == 'nominal':
             total = 0
             for i in range(len(y)):
-                if abs(y[i][0] - predictions[i]) < .001:
+                if abs(y[i][0] - predictions[i]) < .0000000001:
                     total += 1
                 else:
                     total += 0
@@ -107,15 +121,9 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
         else:
             total = 0
             for i in range(len(y)):
-                total += abs(y[i][0] - predictions[i])
+                print(y[i][0], " -- ", predictions[i])
+                total += np.abs((y[i][0] - predictions[i]))
             return total / len(y)
-
-
-
-
-
-
-
 
 
 def normalize(X, column_types):
@@ -147,8 +155,8 @@ def start():
     ]
 
     # hyper-parameters
-    test_index = 3
-    train_index = 4
+    test_index = 2
+    train_index = 1
     weight_type = 'inverse_distance'   # inverse_distance or distance
     k_value = 3
     normalization = False
@@ -182,7 +190,7 @@ start()
 # How to handle real outputs
 # is normalization only for the input features? -- yes i think
 # normalize test and train? -- yes i think
-
+# inverse distance with a dist of zero
 
 
 
@@ -258,6 +266,36 @@ Args:
 
 # def euclidean_distance_2(self, x1, y1, x2, y2):
 #     math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
+
+
+#     if self.weight_type == 'inverse_distance':
+#         distances = [np.inf for j in range(self.k_value)]
+#     else:
+#         distances = [np.NINF for j in range(self.k_value)]
+#     indexes = [0 for j in range(self.k_value)]
+#
+#     for j in range(len(self.X)):  # each instance in the train set
+#         dist = self.calculate_distance(data[i], self.X[j])
+#
+#         if self.weight_type == 'inverse_distance':
+#             min_value_index = int(np.argmin(distances))
+#             if distances[min_value_index] < dist:
+#                 distances[min_value_index] = dist
+#                 indexes[min_value_index] = j
+#         else:
+#             max_value_index = int(np.argmax(distances))
+#             if distances[max_value_index] > dist:
+#                 distances[max_value_index] = dist
+#                 indexes[max_value_index] = j
+#
+#             # now that we have the k closest instances, find the correct output class, or regression value
+#         if self.columntype[-1] != 'nominal':
+#             output = self.determine_regression_prediction(distances, indexes)
+#         else:
+#             output = self.determine_nominal_class(distances, indexes)
+#     return_values.append(output)
+# return return_values
+
 
 
 
