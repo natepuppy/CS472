@@ -10,8 +10,8 @@ from sklearn.decomposition import PCA
 
 
 class KNNClassifier(BaseEstimator,ClassifierMixin):
-    def __init__(self,columntype=[],weight_type='inverse_distance',k_value=3,dist_metric=False,ranges=[]): ## add parameters here
-        self.columntype = columntype #Note This won't be needed until part 5
+    def __init__(self,columntype=[],weight_type='inverse_distance',k_value=3,dist_metric=False,ranges=[]):
+        self.columntype = columntype
         self.weight_type = weight_type
         self.k_value = k_value
         self.dist_metric = dist_metric
@@ -25,10 +25,7 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
     def predict(self, data):
         return_values = []
 
-        for i in range(len(data)):     # FIXME IS there a faster way than this??
-            # percent_completed = (i / len(data)) * 100
-            # print(round(percent_completed, 4), "%")
-
+        for i in range(len(data)):
             distances = []
             indexes = []
             outputs = []
@@ -63,25 +60,26 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
     def calculate_distance(self, arr1, arr2):
         total = 0
         for k in range(len(arr1)):
-            dist = 0
-            if self.columntype == 'nominal':   # find distance for two nominal values
+            if arr1[k] == '?' or arr2[k] == '?':
+                total += 1
+                continue
+            if self.columntype[k] == 'nominal':
                 if arr1[k] != arr2[k]:
-                    dist = 1
+                    total = 1
             else:
-                dist = (arr1[k] - arr2[k]) ** 2
-            total += dist
-            # if arr1[k] == '?' or arr2[k] == '?':
-            #     total += 1
-            #     continue
-            #
-            # if self.columntype[k] == 'nominal':   # find distance for two nominal values  # FIXME This is an array
-            #     if arr1[k] != arr2[k]:
-            #         total = 1
-            # else:
-            #     if not self.dist_metric:
-            #         total += (arr1[k] - arr2[k]) ** 2
-            #     else:
-            #         total += np.abs((arr1[k] - arr2[k])) / self.ranges[k]
+                if not self.dist_metric:
+                    total += (arr1[k] - arr2[k]) ** 2
+                else:
+                    total += np.abs((arr1[k] - arr2[k])) / self.ranges[k]
+
+        # runs faster with this code, but it doesn't work for heterogeneous data
+        # dist = 0
+        # if self.columntype == 'nominal':  # find distance for two nominal values
+        #     if arr1[k] != arr2[k]:
+        #         dist = 1
+        # else:
+        #     dist = (arr1[k] - arr2[k]) ** 2
+        # total += dist
 
         total = np.sqrt(total)
         if self.weight_type == 'inverse_distance':
@@ -91,9 +89,6 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
         return total
 
     def determine_nominal_class(self, distances, outputs):
-        # if self.weight_type == 'inverse_distance':
-        #     ind = np.argmax(distances)
-        #     return outputs[ind]
         if self.weight_type == 'inverse_distance':
             vals = []
             values, counts = np.unique(outputs, return_counts=True)
@@ -124,7 +119,6 @@ class KNNClassifier(BaseEstimator,ClassifierMixin):
         if self.columntype[-1] == 'nominal':
             total = 0
             for i in range(len(y)):
-                # print(int(predictions[i]))
                 if abs(y[i][0] - predictions[i]) < .0000000001:
                     total += 1
                 else:
@@ -267,35 +261,3 @@ def start():
         print(score)
 
 start()
-
-
-# sklearn.neighbors.KNeighborsClassifier
-
-
-# if run_all:
-#     k_values = [1, 3, 5, 7, 9, 11, 13, 15]
-#     for i in range(len(k_values)):
-#         PClass = KNNClassifier(columntype=column_types, weight_type=weight_type, k_value=k_values[i],
-#                                dist_metric=dist_metric, ranges=ranges_train)
-#         PClass.fit(data_train, labels_train)
-#         score = PClass.score(data_test, labels_test)
-#         print(k_values[i], " -- ", score)
-#
-#     weight_type = "regular"
-#     k_values = [1, 3, 5, 7, 9, 11, 13, 15]
-#     for i in range(len(k_values)):
-#         PClass = KNNClassifier(columntype=column_types, weight_type=weight_type, k_value=k_values[i],
-#                                dist_metric=dist_metric, ranges=ranges_train)
-#         PClass.fit(data_train, labels_train)
-#         score = PClass.score(data_test, labels_test)
-#         print(k_values[i], " -- ", score)
-
-# TODO
-# normalize test and train? -- yes i think
-# inverse distance with a dist of zero
-
-"""
-git add .
-git commit -m "finished KNN"
-git push
-"""
