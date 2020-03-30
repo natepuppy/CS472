@@ -128,7 +128,7 @@ def start():
     index = 2
     label_count = 1         # 0 includes the output, 1 excludes the output
     normalize_data = True
-    k_values = [2, 3, 4, 5, 6, 7]
+    k_values = [4, 4, 4, 4, 4]
     debug = False
     sk_learn = False
 
@@ -150,11 +150,7 @@ def start():
             print()
         else:
             result = KMEANSClustering(k=k, debug=debug).fit(data).save_clusters("debug_kmeans.txt")
-            print(sum(result.errors))
-
-start()
-
-
+            # print(sum(result.errors))
 
 
 def plot():
@@ -162,51 +158,92 @@ def plot():
     matplotlib.use("TkAgg")
     from matplotlib import pyplot as plt
 
-    data = None
-    data2 = None
-    xlabel = ""
-    ylabel = ""
-    title = ""
+    ind = np.arange(6)
+    data = [12.143688281579719, 7.138647703985378, 6.037852001778729, 4.571923613060553, 4.439985640515282, 3.5525683030070594]
+    data2 = [18.39368828157972, 7.817456892309572, 6.613823274690356, 5.103468367707373, 4.788247858095654, 3.817678797888969]
 
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.plot(data, label='TS MSE')
-    plt.plot(data2, label="VS MSE")
+    plt.bar(ind, data, 0.30, color='#0d17d1',label='Excluding output column')
+    plt.bar(ind + 0.30, data2, 0.30, color='#cf0a17', label='Including output column')
+
+    plt.xlabel('k')
+    plt.ylabel('Total SSE')
+    plt.xticks(ind+0.15, ("2", "3", "4", "5", "6", "7"))
+    plt.suptitle("Total K-Means SSE for different k values")
+    plt.title("Iris dataset")
     plt.legend()
     plt.show()
 
-    # def plotLine(data, data2, xlabel="", ylabel="", title=""):
-    #     plt.xlabel(xlabel)
-    #     plt.ylabel(ylabel)
-    #     plt.title(title)
-    #     plt.plot(data, label='TS MSE')
-    #     plt.plot(data2, label="VS MSE")
-    #     plt.legend()
-    #     plt.show()
+plot()
+start()
 
 
 
 
 
-# TODO: Set to run for a range of k values
-# TODO: graph the SSE   (for each value of k)
-# TODO: Implement sk_learn
 
 
-# def save_clusters(self, filename):
-#     """
-#         f = open(filename,"w+")
-#         Used for grading.
-#         write("{:d}\n".format(k))
-#         write("{:.4f}\n\n".format(total SSE))
-#         for each cluster and centroid:
-#             write(np.array2string(centroid,precision=4,separator=","))
-#             write("\n")
-#             write("{:d}\n".format(size of cluster))
-#             write("{:.4f}\n\n".format(SSE of cluster))
-#         f.close()
-#     """
+
+
+# index = 2
+# label_count = 1  # 0 includes the output, 1 excludes the output
+# normalize_data = True
+# k_values = [2, 3, 4, 5, 6, 7]
+# debug = False
+# sk_learn = False
+#
+# 12.143688281579719
+# 7.138647703985378
+# 6.037852001778729
+# 4.571923613060553
+# 4.439985640515282
+# 3.5525683030070594
+# x = [12.143688281579719, 7.138647703985378, 6.037852001778729, 4.571923613060553, 4.439985640515282, 3.5525683030070594]
+
+
+
+# index = 2
+# label_count = 0         # 0 includes the output, 1 excludes the output
+# normalize_data = True
+# k_values = [2, 3, 4, 5, 6, 7]
+# debug = False
+# sk_learn = False
+#
+# 18.39368828157972
+# 7.817456892309572
+# 6.613823274690356
+# 5.103468367707373
+# 4.788247858095654
+# 3.817678797888969
+# x = [18.39368828157972, 7.817456892309572, 6.613823274690356, 5.103468367707373, 4.788247858095654, 3.817678797888969]
+
+
+# index = 2
+# label_count = 0         # 0 includes the output, 1 excludes the output
+# normalize_data = True
+# k_values = [4, 4, 4, 4, 4]
+# debug = False
+# sk_learn = False
+#
+# 6.300610869554293
+# 6.855806397983419
+# 6.613823274690356
+# 6.620314390462653
+# 6.624080953040391
+# x = [6.300610869554293, 6.855806397983419, 6.613823274690356, 6.620314390462653, 6.624080953040391]
+
+# label_count = 1
+# 6.209222461782501
+# 6.038907823608437
+# 5.532831003081898
+# 5.541657763082495
+# 6.068688762623882
+# x = [6.209222461782501, 6.038907823608437, 5.532831003081898, 5.541657763082495, 6.06868]8762623882]
+
+
+
+
+
+
 
 
 # def save_clusters(self,filename):
