@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.preprocessing import MinMaxScaler
 from tools.arff import Arff
+from sklearn.cluster import KMeans
 
 #NOTE:  option > enter to import
 
@@ -90,23 +91,18 @@ class KMEANSClustering(BaseEstimator,ClusterMixin):
             total_errors.append(sum(errors))
         self.errors = total_errors
 
-    def save_clusters(self,filename):
+    def save_clusters(self, filename):
         f = open(filename,"w+")
+        f.write("{:d}\n".format(self.k))
+        f.write("{:.4f}\n\n".format(sum(self.errors)))
         for i in range(len(self.centroids)):
-            f.write("Centroid:" + str(i) + " = ")
             f.write(np.array2string(self.centroids[i],precision=4,separator=","))
-            cluster_string = "Cluster:" + str(i) + " "
-            f.write("\n" + cluster_string + "Size = ")
-            f.write("{:d}".format(len(self.clusters[i])))
-            f.write(" SSE = ")
-            f.write("{:.3f}\n".format(self.errors[i]))  # sse of cluster
-            f.write(cluster_string + "contains: ")
-            arr = np.array(self.cluster_indexes[i])
-            my_string = ', '.join(map(str, arr))
-            f.write("[" + my_string + "]")
             f.write("\n")
-        f.write("SSE: {:.3f}\n".format(sum(self.errors)))
+            f.write("{:d}\n".format(len(self.cluster_indexes[i])))
+            f.write("{:.4f}\n\n".format(self.errors[i]))
         f.close()
+        return self
+
 
 
 def normalize(X):
@@ -129,31 +125,107 @@ def start():
     ]
 
     # Hyper-Parameters
-    index = 0
-    label_count = 0         # 0 includes the output, 1 excludes the output
+    index = 2
+    label_count = 1         # 0 includes the output, 1 excludes the output
     normalize_data = True
-    k = 5
-    debug = True
+    k_values = [2, 3, 4, 5, 6, 7]
+    debug = False
+    sk_learn = False
 
     # Get the file and Parse the data
     file = arff_files[index] + ".arff"
-    print("file: ", file)
     mat = Arff(file, label_count=label_count)
-    raw_data = mat.data
-    data = raw_data
+
+    if label_count != 0:
+        data = mat.data[:, 0:-label_count]
+    else:
+        data = mat.data
 
     if normalize_data:
         data = normalize(data)
 
-    KMEANS = KMEANSClustering(k=k, debug=debug)
-    KMEANS.fit(data)
-    KMEANS.save_clusters("debug_kmeans.txt")
-
+    for k in k_values:
+        if sk_learn:
+            result = KMeans(n_clusters=k, random_state=0).fit(data)
+            print()
+        else:
+            result = KMEANSClustering(k=k, debug=debug).fit(data).save_clusters("debug_kmeans.txt")
+            print(sum(result.errors))
 
 start()
 
 
 
+
+def plot():
+    import matplotlib
+    matplotlib.use("TkAgg")
+    from matplotlib import pyplot as plt
+
+    data = None
+    data2 = None
+    xlabel = ""
+    ylabel = ""
+    title = ""
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.plot(data, label='TS MSE')
+    plt.plot(data2, label="VS MSE")
+    plt.legend()
+    plt.show()
+
+    # def plotLine(data, data2, xlabel="", ylabel="", title=""):
+    #     plt.xlabel(xlabel)
+    #     plt.ylabel(ylabel)
+    #     plt.title(title)
+    #     plt.plot(data, label='TS MSE')
+    #     plt.plot(data2, label="VS MSE")
+    #     plt.legend()
+    #     plt.show()
+
+
+
+
+
+# TODO: Set to run for a range of k values
+# TODO: graph the SSE   (for each value of k)
+# TODO: Implement sk_learn
+
+
+# def save_clusters(self, filename):
+#     """
+#         f = open(filename,"w+")
+#         Used for grading.
+#         write("{:d}\n".format(k))
+#         write("{:.4f}\n\n".format(total SSE))
+#         for each cluster and centroid:
+#             write(np.array2string(centroid,precision=4,separator=","))
+#             write("\n")
+#             write("{:d}\n".format(size of cluster))
+#             write("{:.4f}\n\n".format(SSE of cluster))
+#         f.close()
+#     """
+
+
+# def save_clusters(self,filename):
+#     f = open(filename,"w+")
+#     for i in range(len(self.centroids)):
+#         f.write("Centroid:" + str(i) + " = ")
+#         f.write(np.array2string(self.centroids[i],precision=4,separator=","))
+#         cluster_string = "Cluster:" + str(i) + " "
+#         f.write("\n" + cluster_string + "Size = ")
+#         f.write("{:d}".format(len(self.clusters[i])))
+#         f.write(" SSE = ")
+#         f.write("{:.3f}\n".format(self.errors[i]))  # sse of cluster
+#         f.write(cluster_string + "contains: ")
+#         arr = np.array(self.cluster_indexes[i])
+#         my_string = ', '.join(map(str, arr))
+#         f.write("[" + my_string + "]")
+#         f.write("\n")
+#     f.write("SSE: {:.3f}\n".format(sum(self.errors)))
+#     f.close()
 
 
 
